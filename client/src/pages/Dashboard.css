@@ -310,6 +310,28 @@ body { font-family: var(--font); background: var(--bg); color: var(--text-primar
 .activity-text { flex: 1; color: var(--text-primary); }
 .activity-time { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
 
+/* Insights */
+.insights-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insight-summary {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.insight-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
 /* Quick actions */
 .actions-list {
   display: flex;

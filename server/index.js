@@ -10,6 +10,7 @@ import googleAuthRouter from './routes/googleAuth.js';
 import gmailConnectRoutes from './routes/gmailConnect.js';
 import gmailStatsRoutes from './routes/gmailStats.js';
 import gmailRecentRoutes from "./routes/gmailRecent.js";
+import gmailInsightsRoutes from './routes/gmailInsights.js';
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -49,6 +50,7 @@ app.use('/api/auth', googleAuthRouter);
 app.use('/api/auth', gmailConnectRoutes);
 app.use('/api/gmail', gmailRouter);
 app.use('/api/gmail', gmailStatsRoutes);
+app.use('/api/gmail', gmailInsightsRoutes);
 app.use('/api/labels', labelRoutes);
 app.use("/api/gmail/recent", gmailRecentRoutes);
 app.get('/api/dashboard', (req, res) => {
