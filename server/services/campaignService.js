@@ -15,3 +15,11 @@ export const createCampaignService = async ({
 
     return campaign;
 };
+
+export const getCampaignsService = async (userId) => {
+    const campaigns = await Campaign.find({ userId }).sort({
+        createdAt: -1,
+    });
+
+    return campaigns;
+};
