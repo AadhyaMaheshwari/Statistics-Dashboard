@@ -73,10 +73,7 @@ export default function CampaignAnalytics() {
   const { campaign, stats, rates } = analytics;
   const metrics = [
     { label: 'Total Recipients', value: stats.totalRecipients },
-    { label: 'Pending', value: stats.pending ?? 0 },
-    { label: 'Sending', value: stats.sending ?? 0 },
     { label: 'Sent', value: stats.sent },
-    { label: 'Failed', value: stats.failed },
     { label: 'Bounced', value: stats.bounced },
     { label: 'Opened', value: stats.opened },
     { label: 'Clicked', value: stats.clicked ?? 0 },
@@ -116,10 +113,7 @@ export default function CampaignAnalytics() {
       </section>
 
       <section style={{ display: 'grid', gap: '12px', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
-        <div className="stat-card">
-          <div className="stat-value">{rates.deliveryRate}%</div>
-          <div className="stat-label">Delivery Rate</div>
-        </div>
+      
         <div className="stat-card">
           <div className="stat-value">{rates.openRate}%</div>
           <div className="stat-label">Open Rate</div>
@@ -131,10 +125,6 @@ export default function CampaignAnalytics() {
         <div className="stat-card">
           <div className="stat-value">{rates.replyRate}%</div>
           <div className="stat-label">Reply Rate</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{rates.bounceRate}%</div>
-          <div className="stat-label">Bounce Rate</div>
         </div>
       </section>
 

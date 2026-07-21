@@ -1,5 +1,5 @@
 import Recipient from "../models/Recipient.js";
-import Campaign from "../models/Campaign.js"; // NEW: needed to read campaign.createdAt for date-scoping
+import Campaign from "../models/Campaign.js";
 import { getGmailClient } from "./gmailService.js";
 
 function decodeBodyData(body) {
@@ -93,9 +93,6 @@ function extractReplyMetadata(headers) {
     return values;
 }
 
-// NEW: shared helper — fetches messages matching a query, paginating until
-// either Gmail runs out of pages or we hit `hardCap` messages. This replaces
-// the old single-page `maxResults: 100` calls so older mail isn't missed.
 async function listAllMessages(gmail, query, hardCap = 500) {
     let messages = [];
     let pageToken = null;
@@ -115,9 +112,6 @@ async function listAllMessages(gmail, query, hardCap = 500) {
     return messages.slice(0, hardCap);
 }
 
-// NEW: builds a Gmail "after:<unix timestamp>" clause from the campaign's
-// createdAt date, so we only scan mail that could plausibly be related to
-// this campaign instead of the whole inbox / whole bounce history.
 async function getCampaignDateQuery(campaignId) {
     const campaign = await Campaign.findById(campaignId);
     if (!campaign?.createdAt) return "";
@@ -135,10 +129,9 @@ export const syncCampaignBounceRecipients = async (user, campaignId) => {
     const dateQuery = await getCampaignDateQuery(campaignId); // NEW
     const query =
         'in:inbox (from:(mailer-daemon OR postmaster OR "Mail Delivery Subsystem" OR "Mail Delivery System") OR subject:("Mail delivery failed" OR "Delivery Status Notification" OR "Undelivered" OR "Delivery Status Notification (Failure)"))' +
-        dateQuery; // NEW: scoped to after campaign creation
+        dateQuery; 
 
-    const messages = await listAllMessages(gmail, query); // CHANGED: was a single messages.list call capped at 100
-
+    const messages = await listAllMessages(gmail, query); 
     if (!messages.length) {
         return [];
     }
@@ -201,10 +194,8 @@ export const syncCampaignReplyRecipients = async (user, campaignId) => {
     }
 
     const gmail = getGmailClient(user);
-    const dateQuery = await getCampaignDateQuery(campaignId); // NEW
-    // CHANGED: exclude bounce/DSN senders — these emails legitimately contain
-    // the recipient's address in their body, which was causing bounced
-    // recipients to be falsely marked as "replied".
+    const dateQuery = await getCampaignDateQuery(campaignId); 
+
     const query =
         'in:inbox -from:(mailer-daemon OR postmaster OR "Mail Delivery Subsystem" OR "Mail Delivery System")' +
         dateQuery;

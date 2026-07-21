@@ -29,10 +29,7 @@ export const getCampaignAnalyticsService = async (campaignId, user) => {
     });
 
     const totalRecipients = recipients.length;
-    const pending = recipients.filter(r => r.status === "pending").length;
-    const sending = recipients.filter(r => r.status === "sending").length;
     const sent = recipients.filter(r => r.status === "sent").length;
-    const failed = recipients.filter(r => r.status === "failed").length;
     const bounced = recipients.filter(r => r.status === "bounced").length;
     const opened = recipients.filter(r => r.opened).length;
     const clicked = recipients.filter(r => r.clicked).length;
@@ -49,10 +46,7 @@ export const getCampaignAnalyticsService = async (campaignId, user) => {
 
         stats: {
             totalRecipients,
-            pending,
-            sending,
             sent,
-            failed,
             bounced,
             opened,
             clicked,
