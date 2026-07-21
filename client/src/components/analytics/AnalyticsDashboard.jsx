@@ -45,13 +45,13 @@ export default function AnalyticsDashboard() {
   const [emails, setEmails] = useState([]);
   const [insights, setInsights] = useState(null);
 
-  const chartData = [
-    { name: "Promotions", value: stats.promotions },
-    { name: "Social", value: stats.social },
-    { name: "Spam", value: stats.spam },
-    { name: "Updates", value: stats.updates },
-    { name: "Others", value: stats.inbox - stats.promotions - stats.social - stats.spam - (stats.updates || 0) - (stats.forums || 0) },
-  ];
+ const chartData = stats ? [
+  { name: "Promotions", value: stats.promotions },
+  { name: "Social", value: stats.social },
+  { name: "Spam", value: stats.spam },
+  { name: "Updates", value: stats.updates },
+  { name: "Others", value: (stats.inbox || 0) - stats.promotions - stats.social - stats.spam - (stats.updates || 0) - (stats.forums || 0) },
+] : [];
 
   const COLORS = [
     "#437fdf",
@@ -85,24 +85,23 @@ export default function AnalyticsDashboard() {
   }
 
   async function fetchStats() {
-      const token = localStorage.getItem("token");
+  try {
+    const token = localStorage.getItem("token");
+    const response = await fetch("http://localhost:5000/api/gmail/stats", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await response.json();
 
-      const response = await fetch(
-        "http://localhost:5000/api/gmail/stats",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setStats(data.stats);
-        setGmailConnected(true);
-      }
+    if (data.success && data.stats) {   // ← added `&& data.stats`
+      setStats(data.stats);
+      setGmailConnected(true);
+    } else {
+      setGmailConnected(false);         // ← explicitly handle not-connected
     }
+  } catch (err) {
+    console.error(err);
+  }
+}
 
   async function fetchRecentEmails() {
     try {
@@ -193,18 +192,16 @@ export default function AnalyticsDashboard() {
         </div>
       </header>
 
-      <section className="stats-grid">
-        {Object.entries(stats).map(([label, value]) => (
-          <div className="stat-card" key={label}>
-            <div className="stat-value">{value}</div>
-
-            <div className="stat-label">
-              {label.toUpperCase()}
-            </div>
-          </div>
-        ))}
-      </section>
-
+      {stats && (
+  <section className="stats-grid">
+    {Object.entries(stats).map(([label, value]) => (
+      <div className="stat-card" key={label}>
+        <div className="stat-value">{value}</div>
+        <div className="stat-label">{label.toUpperCase()}</div>
+      </div>
+    ))}
+  </section>
+)}
       <section className="card">
         <h2 className="card-title">
           Email Distribution

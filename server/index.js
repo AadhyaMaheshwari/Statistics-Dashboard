@@ -52,7 +52,6 @@ app.get('/api/health', (req, res) => {
 app.use('/api/auth', authRouter);
 app.use('/api/auth', googleAuthRouter);
 app.use('/api/auth', gmailConnectRoutes);
-app.use('/api/gmail', gmailRouter);
 app.use('/api/gmail', gmailStatsRoutes);
 app.use('/api/labels', labelRoutes);
 app.use("/api/gmail/recent", gmailRecentRoutes);
