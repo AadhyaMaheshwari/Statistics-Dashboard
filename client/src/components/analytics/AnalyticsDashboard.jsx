@@ -9,6 +9,8 @@ import {
   Legend,
 } from "recharts";
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function getInitials(name) {
   return name
     .trim()
@@ -45,13 +47,13 @@ export default function AnalyticsDashboard() {
   const [emails, setEmails] = useState([]);
   const [insights, setInsights] = useState(null);
 
- const chartData = stats ? [
-  { name: "Promotions", value: stats.promotions },
-  { name: "Social", value: stats.social },
-  { name: "Spam", value: stats.spam },
-  { name: "Updates", value: stats.updates },
-  { name: "Others", value: (stats.inbox || 0) - stats.promotions - stats.social - stats.spam - (stats.updates || 0) - (stats.forums || 0) },
-] : [];
+  const chartData = stats ? [
+    { name: "Promotions", value: stats.promotions },
+    { name: "Social", value: stats.social },
+    { name: "Spam", value: stats.spam },
+    { name: "Updates", value: stats.updates },
+    { name: "Others", value: (stats.inbox || 0) - stats.promotions - stats.social - stats.spam - (stats.updates || 0) - (stats.forums || 0) },
+  ] : [];
 
   const COLORS = [
     "#437fdf",
@@ -66,7 +68,7 @@ export default function AnalyticsDashboard() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/auth/google/connect",
+        `${API}/api/auth/google/connect`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -85,30 +87,30 @@ export default function AnalyticsDashboard() {
   }
 
   async function fetchStats() {
-  try {
-    const token = localStorage.getItem("token");
-    const response = await fetch("http://localhost:5000/api/gmail/stats", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const data = await response.json();
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API}/api/gmail/stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await response.json();
 
-    if (data.success && data.stats) {   // ← added `&& data.stats`
-      setStats(data.stats);
-      setGmailConnected(true);
-    } else {
-      setGmailConnected(false);         // ← explicitly handle not-connected
+      if (data.success && data.stats) {
+        setStats(data.stats);
+        setGmailConnected(true);
+      } else {
+        setGmailConnected(false);
+      }
+    } catch (err) {
+      console.error(err);
     }
-  } catch (err) {
-    console.error(err);
   }
-}
 
   async function fetchRecentEmails() {
     try {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/gmail/recent",
+        `${API}/api/gmail/recent`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -131,7 +133,7 @@ export default function AnalyticsDashboard() {
       const token = localStorage.getItem("token");
 
       const response = await fetch(
-        "http://localhost:5000/api/gmail/insights",
+        `${API}/api/gmail/insights`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -193,15 +195,15 @@ export default function AnalyticsDashboard() {
       </header>
 
       {stats && (
-  <section className="stats-grid">
-    {Object.entries(stats).map(([label, value]) => (
-      <div className="stat-card" key={label}>
-        <div className="stat-value">{value}</div>
-        <div className="stat-label">{label.toUpperCase()}</div>
-      </div>
-    ))}
-  </section>
-)}
+        <section className="stats-grid">
+          {Object.entries(stats).map(([label, value]) => (
+            <div className="stat-card" key={label}>
+              <div className="stat-value">{value}</div>
+              <div className="stat-label">{label.toUpperCase()}</div>
+            </div>
+          ))}
+        </section>
+      )}
       <section className="card">
         <h2 className="card-title">
           Email Distribution
