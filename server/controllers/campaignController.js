@@ -12,6 +12,19 @@ import Recipient from "../models/Recipient.js";
 import Campaign from "../models/Campaign.js";
 import { getCampaignAnalyticsService } from "../services/campaignAnalyticsService.js";
 
+// Finds a value by key regardless of casing (e.g. "Email", "email", "EMAIL",
+// "recipientEmail" all resolve correctly, since CSV files vary in header style).
+function getField(row, ...possibleNames) {
+    const lowerMap = Object.fromEntries(
+        Object.entries(row).map(([key, value]) => [key.trim().toLowerCase(), value])
+    );
+    for (const name of possibleNames) {
+        const value = lowerMap[name.toLowerCase()];
+        if (value) return value;
+    }
+    return undefined;
+}
+
 export const createCampaign = async (req, res) => {
     try {
         const { name, subject, body } = req.body;
@@ -121,15 +134,24 @@ export const uploadRecipients = async (req, res) => {
 
         const recipients = await parseCSV(req.file.path);
 
-        const savedRecipients = await Recipient.insertMany(
-    recipients.map((recipient) => ({
-        campaignId,
-        email: recipient.Email,
-        name: recipient.Name || "",
-        trackingToken: crypto.randomUUID(),
-        status: "pending",
-    }))
-);
+        const validRecipients = recipients
+            .map((recipient) => ({
+                campaignId,
+                email: (getField(recipient, 'email', 'recipientemail') || '').trim().toLowerCase(),
+                name: (getField(recipient, 'name', 'recipientname') || '').trim(),
+                trackingToken: crypto.randomUUID(),
+                status: "pending",
+            }))
+            .filter((recipient) => recipient.email); // drop rows with no usable email instead of failing the whole batch
+
+        if (!validRecipients.length) {
+            return res.status(400).json({
+                success: false,
+                message: "No valid email addresses found in the uploaded CSV.",
+            });
+        }
+
+        const savedRecipients = await Recipient.insertMany(validRecipients);
 
         await Campaign.findByIdAndUpdate(campaignId, {
             totalRecipients: savedRecipients.length,
