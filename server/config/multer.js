@@ -1,10 +1,20 @@
 import multer from "multer";
 import path from "path";
+import fs from "fs";
+
+// Resolve an absolute path for the uploads directory and guarantee it
+// exists right here, independent of anything index.js does. This avoids
+// any mismatch between relative-path resolution in different files/environments
+// (e.g. Render's working directory not matching what "uploads/" resolves to).
+const uploadsDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
 
 // Configure where uploaded files will be stored
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, "uploads/");
+        cb(null, uploadsDir);
     },
 
     filename: (req, file, cb) => {
