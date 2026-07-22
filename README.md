@@ -12,11 +12,9 @@ A full-stack Gmail campaign and analytics dashboard. Connect your Gmail account,
 
 ## Tech Stack
 
-**Frontend:** React, React Router, Recharts, Axios, Vite
-**Backend:** Node.js, Express, MongoDB (Mongoose)
-**Auth:** JWT, bcrypt, Google OAuth 2.0
-**Email:** Gmail API
-**File Handling:** Multer, CSV Parser
-**Deployment:** Vercel (frontend), Render (backend)
-
-Requires a `.env` file in `server/` with MongoDB, JWT, and Google OAuth credentials
+- **Frontend:** React, React Router, Recharts, Axios, Vite
+- **Backend:** Node.js, Express, MongoDB (Mongoose)
+- **Auth:** JWT, bcrypt, Google OAuth 2.0
+- **Email:** Gmail API
+- **File Handling:** Multer, CSV Parser
+- **Deployment:** Vercel (frontend), Render (backend)
