@@ -134,10 +134,8 @@ const confirmAndDelete = async (labelKey) => {
           onChange={e => setScanMax(Number(e.target.value))}
         >
           <option value={500}>500 emails</option>
-          <option value={1000}>1,000 emails</option>
-          <option value={2000}>2,000 emails</option>
-          <option value={5000}>5,000 emails</option>
-          <option value={10000}>10,000 emails</option>
+          <option value={1000}>1000 emails</option>
+          <option value={2000}>2000 emails</option>
         </select>
         <button
           className="lm-btn lm-btn-scan"

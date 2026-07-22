@@ -9,6 +9,8 @@ const router = express.Router();
 router.post('/trash', authMiddleware, trashEmails);
 router.use(authMiddleware);
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 async function getGmailClient(userId) {
   const user = await User.findById(userId);
   if (!user?.googleAccessToken) throw new Error('Gmail not connected');
@@ -23,6 +25,29 @@ async function getGmailClient(userId) {
     refresh_token: user.googleRefreshToken,
   });
   return google.gmail({ version: 'v1', auth: oauth2Client });
+}
+
+// Fetches a single message, retrying with exponential backoff on 429
+// (quota exceeded) responses instead of letting the whole scan fail.
+async function getMessageWithRetry(gmail, id, retries = 4) {
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      return await gmail.users.messages.get({
+        userId: 'me', id,
+        format: 'metadata',
+        metadataHeaders: ['From', 'Subject', 'List-Unsubscribe'],
+      });
+    } catch (err) {
+      const isQuotaError = err?.code === 429 || /quota/i.test(err?.message || '');
+      if (isQuotaError && attempt < retries - 1) {
+        const delay = 1000 * Math.pow(2, attempt);
+        console.log(`Quota hit on ${id}, retrying in ${delay}ms`);
+        await sleep(delay);
+      } else {
+        throw err;
+      }
+    }
+  }
 }
 
 // ── POST /api/labels/setup — create all 7 labels in Gmail (run once) ────────
@@ -83,7 +108,8 @@ const existingMap = new Map(
 router.get('/scan', async (req, res) => {
   try {
     const gmail     = await getGmailClient(req.user.id);
-    const maxEmails = Math.min(parseInt(req.query.maxEmails) || 500, 10000);
+    // CHANGED: capped at 2000 (was 10000) — see note below on scanning larger inboxes
+    const maxEmails = Math.min(parseInt(req.query.maxEmails) || 500, 2000);
 
     let messageIds = [];
     let pageToken  = null;
@@ -102,20 +128,21 @@ router.get('/scan', async (req, res) => {
     const preview = {};
     LABEL_RULES.forEach(r => { preview[r.key] = []; });
 
-    const BATCH = 50;
+    // CHANGED: smaller batch size + retry-with-backoff on quota errors +
+    // a fixed delay between batches, so a large scan degrades gracefully
+    // instead of failing outright on Gmail's per-minute quota.
+    const BATCH = 20;
     for (let i = 0; i < messageIds.length; i += BATCH) {
       const results = await Promise.all(
-        messageIds.slice(i, i + BATCH).map(id =>
-          gmail.users.messages.get({
-            userId: 'me', id,
-            format: 'metadata',
-            metadataHeaders: ['From', 'Subject', 'List-Unsubscribe'],
-          })
-        )
+        messageIds.slice(i, i + BATCH).map((id) => getMessageWithRetry(gmail, id))
       );
       for (const { data: msg } of results) {
         const key = classifyEmail(msg.payload.headers || []);
         if (key) preview[key].push(msg.id);
+      }
+
+      if (i + BATCH < messageIds.length) {
+        await sleep(300);
       }
     }
 
@@ -147,8 +174,6 @@ router.post('/apply', async (req, res) => {
     if (!Object.keys(labelIds).length) {
       return res.status(400).json({ error: 'Run Setup first' });
     }
-
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
     const applyLabelBatch = async (ids, labelId) => {
       const BATCH_SIZE = 500;
@@ -212,8 +237,6 @@ router.post('/delete', async (req, res) => {
     if (!messageIds.length)
       return res.json({ success: true, deleted: 0 });
 
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)); // FIX: was missing, caused ReferenceError
-
     if (permanent) {
       for (let i = 0; i < messageIds.length; i += 1000)
         await gmail.users.messages.batchDelete({
@@ -221,10 +244,6 @@ router.post('/delete', async (req, res) => {
           requestBody: { ids: messageIds.slice(i, i + 1000) },
         });
     } else {
-      // FIX: was `for (const msg of results)` — `results` never existed in this
-      // function's scope. Now correctly iterates the messageIds we just fetched,
-      // and moves each message to Trash (adds TRASH, removes the custom label)
-      // instead of re-adding the same label being "deleted", which did nothing.
       for (const messageId of messageIds) {
         await gmail.users.messages.modify({
           userId: 'me',
