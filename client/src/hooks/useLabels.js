@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import axios from 'axios';
 
-const API = 'http://localhost:5000/api/labels';
+const API = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/labels`;
 
 export function useLabels() {
   const [labels,      setLabels]      = useState([]);

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useLabels } from '../hooks/useLabels';
 import './LabelManager.css';
 
+const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const LABEL_META = {
   promotions: { emoji: '🏷️', canDelete: true,  permanent: false, protected: false, desc: 'Sales, offers, newsletters, marketing' },
   social:     { emoji: '💬', canDelete: true,  permanent: false, protected: false, desc: 'Facebook, Instagram, Twitter, Reddit' },
@@ -71,7 +73,7 @@ const confirmAndDelete = async (labelKey) => {
   const token = localStorage.getItem('token');
 
   try {
-    const res = await fetch('/api/labels/trash', {
+    const res = await fetch(`${API}/api/labels/trash`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -80,13 +82,25 @@ const confirmAndDelete = async (labelKey) => {
       body: JSON.stringify({ labelKey }),
     });
 
-    const data = await res.json();
+    const text = await res.text();
+    let data = {};
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (parseErr) {
+      console.error("Non-JSON response:", text);
+      throw new Error('Unexpected response from server');
+    }
+
+    if (!res.ok) {
+      throw new Error(data.error || data.message || 'Failed to trash emails');
+    }
+
     console.log("Deleted:", data);
     showStatus(`✓ Trashed emails in ${labelKey}`, 'success');
     await fetchLabels();
   } catch (err) {
     console.error("❌ Delete failed:", err);
-    showStatus('Failed to trash emails', 'error');
+    showStatus(err.message || 'Failed to trash emails', 'error');
   }
 };
   return (
@@ -194,7 +208,7 @@ const confirmAndDelete = async (labelKey) => {
             </div>
             <div className="lm-modal-body">
               {LABEL_META[confirmDelete]?.permanent
-                ? 'This cannot be undone. Emails will be gone forever.'
+                ? 'This cannot be undone. Emails will be permanently deleted
                 : 'Emails move to Trash and are auto-deleted by Gmail after 30 days.'}
             </div>
             <div className="lm-modal-actions">

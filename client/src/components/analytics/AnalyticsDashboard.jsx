@@ -45,7 +45,6 @@ export default function AnalyticsDashboard() {
   });
 
   const [emails, setEmails] = useState([]);
-  const [insights, setInsights] = useState(null);
 
   const chartData = stats ? [
     { name: "Promotions", value: stats.promotions },
@@ -128,29 +127,6 @@ export default function AnalyticsDashboard() {
     }
   }
 
-  async function fetchInsights() {
-    try {
-      const token = localStorage.getItem("token");
-
-      const response = await fetch(
-        `${API}/api/gmail/insights`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        setInsights(data.insights);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     const stored = localStorage.getItem("userName");
@@ -161,7 +137,6 @@ export default function AnalyticsDashboard() {
       setName(stored);
       fetchStats();
       fetchRecentEmails();
-      fetchInsights();
     }
   }, [navigate]);
 
@@ -247,25 +222,6 @@ export default function AnalyticsDashboard() {
               </li>
             ))}
           </ul>
-        </section>
-
-        <section className="card">
-          <h2 className="card-title">
-            Inbox Insights
-          </h2>
-
-          {insights ? (
-            <div className="insights-panel">
-              <p className="insight-summary">{insights.summary}</p>
-              <ul className="insight-list">
-                <li><strong>Unread:</strong> {insights.unreadCount}</li>
-                <li><strong>Unread ratio:</strong> {insights.unreadRatio}%</li>
-                <li><strong>Top category:</strong> {insights.topCategory}</li>
-              </ul>
-            </div>
-          ) : (
-            <p className="insight-summary">Connect Gmail to unlock insights.</p>
-          )}
         </section>
 
         <section className="card">
